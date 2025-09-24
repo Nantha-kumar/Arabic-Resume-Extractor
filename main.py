@@ -39,14 +39,14 @@ app.add_middleware(
 class ExtractedField(BaseModel):
     field_name: str
     value: Union[str, List[str]]  # Simplified to handle string lists properly
-    confidence_score: float
+#    confidence_score: float
 
-    @field_validator('confidence_score')
-    @classmethod
-    def validate_confidence_score(cls, v):
-        if not 0.0 <= v <= 1.0:
-            raise ValueError('Confidence score must be between 0.0 and 1.0')
-        return v
+    # @field_validator('confidence_score')
+    # @classmethod
+    # def validate_confidence_score(cls, v):
+    #     if not 0.0 <= v <= 1.0:
+    #         raise ValueError('Confidence score must be between 0.0 and 1.0')
+    #     return v
 
 class ExtractionResponse(BaseModel):
     extracted_data: List[ExtractedField]
@@ -90,19 +90,17 @@ Fields to extract: {', '.join(fields_to_extract)}
 For each field, create an object with these exact keys:
 - "field_name": the name of the field being extracted
 - "value": the extracted value (string for single values, array of strings for lists like skills)
-- "confidence_score": a number between 0.0 and 1.0 indicating extraction confidence
 
 Important formatting rules:
 1. Return ONLY valid JSON - no explanations, no markdown, no additional text
 2. Use double quotes for all strings
 3. For list-type fields (like Skills), use an array of strings: ["skill1", "skill2", "skill3"]
 4. For single-value fields (like Name, Email), use a string: "John Doe"
-5. If a field is not found, set value to "" and confidence_score to 0.0
 
 Example format:
 [
-  {{"field_name": "Name", "value": "أحمد محمد", "confidence_score": 0.95}},
-  {{"field_name": "Skills", "value": ["البرمجة", "إدارة المشاريع"], "confidence_score": 0.90}}
+  {{"field_name": "Name", "value": "أحمد محمد"}},
+  {{"field_name": "Skills", "value": ["البرمجة", "إدارة المشاريع"]}}
 ]
 """
 
@@ -115,7 +113,7 @@ def validate_and_fix_json_structure(data_list: List[Dict[str, Any]]) -> List[Ext
             # Ensure all required fields exist
             field_name = item.get('field_name', 'Unknown')
             value = item.get('value', '')
-            confidence_score = float(item.get('confidence_score', 0.0))
+            # confidence_score = float(item.get('confidence_score', 0.0))
 
             # Handle value type conversion
             if isinstance(value, list):
@@ -127,12 +125,11 @@ def validate_and_fix_json_structure(data_list: List[Dict[str, Any]]) -> List[Ext
                 value = str(value)
 
             # Ensure confidence score is valid
-            confidence_score = max(0.0, min(1.0, confidence_score))
+            # confidence_score = max(0.0, min(1.0, confidence_score))
 
             fixed_item = {
                 'field_name': field_name,
                 'value': value,
-                'confidence_score': confidence_score
             }
 
             # Validate with Pydantic model
@@ -145,7 +142,6 @@ def validate_and_fix_json_structure(data_list: List[Dict[str, Any]]) -> List[Ext
             fixed_data.append(ExtractedField(
                 field_name=str(item.get('field_name', 'Unknown')),
                 value="",
-                confidence_score=0.0
             ))
 
     return fixed_data
@@ -264,7 +260,6 @@ async def extract_resume_data(resume_file: UploadFile = File(...)):
                     ExtractedField(
                         field_name="Error",
                         value=f"JSON parsing failed: {str(e)}. Raw response: {cleaned_content[:200]}...",
-                        confidence_score=0.0
                     )
                 ]
                 return ExtractionResponse(extracted_data=fallback_data)
