@@ -38,18 +38,10 @@ app.add_middleware(
 # --- Fixed Pydantic Models ---
 class ExtractedField(BaseModel):
     field_name: str
-    value: Union[str, List[str]]  # Simplified to handle string lists properly
-#    confidence_score: float
-
-    # @field_validator('confidence_score')
-    # @classmethod
-    # def validate_confidence_score(cls, v):
-    #     if not 0.0 <= v <= 1.0:
-    #         raise ValueError('Confidence score must be between 0.0 and 1.0')
-    #     return v
+    value: Union[str, List[str], List[Dict[str, str]]]  # Support for experience objects
 
 class ExtractionResponse(BaseModel):
-    extracted_data: List[ExtractedField]
+    extracted_data: Dict[str, Any]  # Changed to Dict instead of List
 
 # --- Helper Functions ---
 def clean_json_response(response_text: str) -> str:
@@ -99,52 +91,29 @@ Important formatting rules:
 
 Example format:
 [
-  {{"field_name": "Name", "value": "أحمد محمد"}},
-  {{"field_name": "Skills", "value": ["البرمجة", "إدارة المشاريع"]}}
+  {{"Name": "Hameed", "mail": "hameed@gmail.com"}}
 ]
 """
 
-def validate_and_fix_json_structure(data_list: List[Dict[str, Any]]) -> List[ExtractedField]:
-    """Validate and fix JSON structure to match Pydantic model"""
-    fixed_data = []
-
+def convert_list_to_dict(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Convert list of field objects to dictionary format"""
+    result = {}
     for item in data_list:
-        try:
-            # Ensure all required fields exist
-            field_name = item.get('field_name', 'Unknown')
-            value = item.get('value', '')
-            # confidence_score = float(item.get('confidence_score', 0.0))
+        field_name = item.get('field_name', '')
+        value = item.get('value', '')
+        if field_name:
+            result[field_name] = value
+    return result
 
-            # Handle value type conversion
-            if isinstance(value, list):
-                # Convert list elements to strings if needed
-                value = [str(v) for v in value if v]  # Remove empty values
-            elif value is None:
-                value = ""
-            else:
-                value = str(value)
-
-            # Ensure confidence score is valid
-            # confidence_score = max(0.0, min(1.0, confidence_score))
-
-            fixed_item = {
-                'field_name': field_name,
-                'value': value,
-            }
-
-            # Validate with Pydantic model
-            extracted_field = ExtractedField(**fixed_item)
-            fixed_data.append(extracted_field)
-
-        except Exception as e:
-            print(f"Error processing item {item}: {str(e)}")
-            # Create a fallback item
-            fixed_data.append(ExtractedField(
-                field_name=str(item.get('field_name', 'Unknown')),
-                value="",
-            ))
-
-    return fixed_data
+def validate_and_fix_json_structure(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Validate and fix JSON structure - convert from list format to dict format"""
+    try:
+        # Convert list format to dictionary format
+        result_dict = convert_list_to_dict(data_list)
+        return result_dict
+    except Exception as e:
+        print(f"Error processing data {data_list}: {str(e)}")
+        return {}
 
 # --- API Endpoint ---
 @app.post("/extract/", response_model=ExtractionResponse)
@@ -246,22 +215,23 @@ async def extract_resume_data(resume_file: UploadFile = File(...)):
                     elif 'data' in extracted_data_raw:
                         extracted_data_raw = extracted_data_raw['data']
                     else:
-                        # Convert single object to array
-                        extracted_data_raw = [extracted_data_raw]
+                        # If it's already a dict with field names as keys, use it directly
+                        extracted_data = extracted_data_raw
+                        return ExtractionResponse(extracted_data=extracted_data)
 
-                # Validate and fix the data structure
-                extracted_data = validate_and_fix_json_structure(extracted_data_raw)
+                # If it's a list, convert to dict format
+                if isinstance(extracted_data_raw, list):
+                    extracted_data = validate_and_fix_json_structure(extracted_data_raw)
+                else:
+                    extracted_data = extracted_data_raw
 
                 return ExtractionResponse(extracted_data=extracted_data)
 
             except json.JSONDecodeError as e:
                 # Fallback: create a minimal response
-                fallback_data = [
-                    ExtractedField(
-                        field_name="Error",
-                        value=f"JSON parsing failed: {str(e)}. Raw response: {cleaned_content[:200]}...",
-                    )
-                ]
+                fallback_data = {
+                    "Error": f"JSON parsing failed: {str(e)}. Raw response: {cleaned_content[:200]}..."
+                }
                 return ExtractionResponse(extracted_data=fallback_data)
 
         except httpx.HTTPStatusError as e:
