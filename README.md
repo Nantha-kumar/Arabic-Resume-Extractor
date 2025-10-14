@@ -96,13 +96,31 @@ curl -X 'POST' \
   -F 'resume_file=@my_resume.txt;type=text/plain'
 ```
 
-## Using the Frontend
 
-This project includes a simple web interface that is served directly by the FastAPI backend.
+## Frontend (Angular) Setup and Usage
 
-1.  Make sure the FastAPI server is running (as described in the "Running the Application" section).
-2.  Open your web browser and navigate to **`http://127.0.0.1:8000/ui`**.
-3.  The web page will load, and you can use the interface to select your resume file and submit it to the API. The extracted JSON will be displayed on the page.
+The project includes a modern Angular frontend. It must be run as a separate application.
+
+1.  **Navigate to the frontend directory:**
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install the required Node.js dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Run the Angular development server:**
+    ```bash
+    npm start
+    ```
+    This command runs the Angular CLI's development server. The application will automatically reload if you change any of the source files.
+
+4.  **Access the application:**
+    Open your web browser and navigate to **`http://localhost:4200/`**.
+
+The frontend application communicates with the FastAPI backend, so ensure the backend server is also running.
 
 ### Example Response
 

@@ -1,0 +1,142 @@
+<div class="shell bg-theme">
+  <div class="stack">
+    <header class="hero" role="banner" aria-label="Arabic Resume Extractor">
+      <h1 class="hero-title">Arabic Resume Extractor</h1>
+      <p class="hero-sub">Upload a resume and extract structured data in seconds.</p>
+      <div class="hl" aria-hidden="true"></div>
+    </header>
+    <div class="grid-2">
+      <section aria-labelledby="upload-title">
+        <h2 id="upload-title" class="sr-only">Upload Area</h2>
+
+        <div
+          class="dropzone"
+          [class.dragover]="isDragOver"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          role="button"
+          tabindex="0"
+          aria-label="Upload Arabic Resume"
+          (keydown)="onDropzoneKeydown($event)"
+        >
+          <input #fileInput id="fileInput" class="dz-input" type="file" accept=".pdf,.doc,.docx,.txt"
+                 aria-label="Choose resume file"
+                 (change)="setFile($event)"/>
+
+          <div class="dz-inner">
+            <div class="icon-circle" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div class="dz-title">Upload Arabic Resume</div>
+            <div class="dz-hint">Drag and drop your file here, or click to browse. Supports PDF and DOCX files.</div>
+          </div>
+        </div>
+
+        <div class="chipwrap" *ngIf="fileToUpload">
+          <div class="chip" role="status" aria-live="polite">
+            <div aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+              </svg>
+            </div>
+            <div>
+              <div class="name">{{ fileToUpload.name }}</div>
+              <div class="meta">{{ prettySize(fileToUpload.size) }}</div>
+            </div>
+            <div class="spacer"></div>
+            <button class="close" type="button" (click)="clearFile()" aria-label="Remove file">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="actions">
+            <button
+              class="btn"
+              type="button"
+              (click)="uploadResume()"
+              [disabled]="!fileToUpload || loading"
+              aria-live="polite"
+            >
+              <span *ngIf="!loading">Extract Data</span>
+              <span *ngIf="loading">Extracting... <span class="spinner" aria-hidden="true"></span></span>
+            </button>
+          </div>
+        </div>
+
+        <section class="card" aria-labelledby="results-title" *ngIf="extractedData" style="margin-top:12px;">
+          <div class="card-header">
+            <div id="results-title" class="card-title">Extracted Data</div>
+            <button
+              class="btn btn-outline"
+              type="button"
+              (click)="copyJson()"
+              [disabled]="!extractedData || copying"
+              aria-live="polite"
+            >
+              <span *ngIf="!copying">Copy JSON</span>
+              <span *ngIf="copying">Copying... <span class="spinner-alt" aria-hidden="true"></span></span>
+            </button>
+          </div>
+          <pre id="jsonData" class="code" aria-live="polite">{{ extractedData | json }}</pre>
+        </section>
+      </section>
+
+      <aside class="how" aria-labelledby="how-title">
+        <h3 id="how-title">How it works</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="badge">1</div>
+            <div class="step-body">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+              </svg>
+              <span>Upload your Arabic resume in PDF, DOCX, DOC, or TXT format.</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="badge">2</div>
+            <div class="step-body">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V20a2 2 0 1 1-4 0v-.6a1.65 1.65 0 0 0-1.82-.33l-.06-.06A1.65 1.65 0 0 0 7.7 6.3l.06.06A1.65 1.65 0 0 0 9.6 6H10a2 2 0 1 1 4 0h.4a1.65 1.65 0 0 0 1.82.33l.06-.06A1.65 1.65 0 0 0 19.4 11H20a2 2 0 1 1 0 4h-.6z"/>
+              </svg>
+              <span>Click “Extract Data” to process the document using the backend service.</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="badge">3</div>
+            <div class="step-body">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="8" y="2" width="8" height="4" rx="1"/>
+                <rect x="6" y="6" width="12" height="16" rx="2"/>
+                <path d="M9 12h6M9 16h6"/>
+              </svg>
+              <span>View and copy the extracted structured data in JSON format.</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="card" *ngIf="errorMessage" role="alert" aria-live="assertive">
+      <div class="card-title" style="color: var(--danger);">Error</div>
+      <p class="muted">{{ errorMessage }}</p>
+    </section>
+
+    <footer>Built for parsing Arabic resumes with accuracy and speed</footer>
+  </div>
+</div>
+
+<div class="toast" [ngClass]="{'success': toast && toast.type === 'success', 'error': toast && toast.type === 'error'}" *ngIf="toast">
+  <div class="t-title">{{ toast.title }}</div>
+  <div class="t-body">{{ toast.message }}</div>
+</div>

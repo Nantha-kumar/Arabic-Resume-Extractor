@@ -249,6 +249,3 @@ async def extract_resume_data(resume_file: UploadFile = File(...)):
 @app.get("/")
 def read_root():
     return {"status": "Arabic Resume Extractor API is running."}
-
-# --- Serve Frontend ---
-app.mount("/ui", StaticFiles(directory="frontend", html=True), name="frontend")
